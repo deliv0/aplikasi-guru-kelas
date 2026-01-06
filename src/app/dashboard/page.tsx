@@ -25,72 +25,118 @@ export default async function Dashboard() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: true })
 
+  // --- COMPONENT UI ---
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      {/* Header Dashboard */}
-      <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-lg shadow-sm border">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Halo, {profile?.full_name || user.email}!
-          </h1>
-          <p className="text-gray-500">Selamat datang di Aplikasi Guru Kelas.</p>
-        </div>
-        <div className="text-right">
-           <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-             {profile?.role || 'Guru'}
-           </span>
-        </div>
-      </div>
-
-      {/* Bagian Data Kelas */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Daftar Kelas Saya</h2>
+    <div className="min-h-screen bg-gray-50 font-sans selection:bg-blue-100">
+      <div className="max-w-6xl mx-auto p-6 md:p-8 space-y-8">
+        
+        {/* === HEADER SECTION === */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+              Dashboard Guru
+            </h1>
+            <p className="text-gray-600 mt-1 text-base">
+              Selamat datang, <span className="font-semibold text-gray-900">{profile?.full_name || user.email}</span>! 👋
+            </p>
+          </div>
           
           <Link 
             href="/dashboard/create-class" 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition inline-block"
+            className="group flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold shadow-lg shadow-blue-200 transition-all transform hover:-translate-y-0.5 active:scale-95"
           >
-            + Tambah Kelas
+            <span className="text-xl leading-none">+</span>
+            <span>Buat Kelas Baru</span>
           </Link>
         </div>
 
-        {/* List Kelas */}
-        {classError ? (
-          <div className="text-red-500 p-4 bg-red-50 rounded">
-            Error database: {classError.message}
+        {/* === CONTENT SECTION === */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              📂 Daftar Kelas
+              <span className="text-xs font-normal bg-gray-200 text-gray-600 px-2 py-1 rounded-full">
+                {classes?.length || 0}
+              </span>
+            </h2>
           </div>
-        ) : classes && classes.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {classes.map((kelas) => (
-              /* UPDATE: Menggunakan Link agar bisa diklik */
-              <Link 
-                key={kelas.id} 
-                href={`/dashboard/class/${kelas.id}`} 
-                className="block group"
-              >
-                <div className="border p-5 rounded-lg hover:shadow-lg transition cursor-pointer bg-white border-gray-200 group-hover:border-blue-400 h-full">
-                  <div className="flex justify-between items-start">
+
+          {/* ERROR STATE */}
+          {classError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3">
+              <span>⚠️</span>
+              <p>Gagal memuat data: {classError.message}</p>
+            </div>
+          )}
+
+          {/* GRID KELAS */}
+          {classes && classes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {classes.map((kelas) => (
+                <Link 
+                  key={kelas.id} 
+                  href={`/dashboard/class/${kelas.id}`} 
+                  className="group relative block h-full outline-none"
+                >
+                  {/* Efek Bayangan Belakang (Layer 1) */}
+                  <div className="absolute inset-0 bg-gray-200 rounded-2xl transform translate-y-2 transition-transform duration-300 group-hover:translate-y-3"></div>
+                  
+                  {/* Kartu Utama (Layer 2) */}
+                  <div className="relative h-full bg-white border border-gray-200 rounded-2xl p-6 transition-transform duration-300 transform group-hover:-translate-y-1 group-hover:border-blue-400 group-focus:ring-2 group-focus:ring-blue-500">
+                    
+                    {/* Icon Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                        🎓
+                      </div>
+                      <span className="bg-gray-50 text-gray-400 text-[10px] font-mono px-2 py-1 rounded border border-gray-100">
+                        ID: {kelas.id.slice(0, 4)}...
+                      </span>
+                    </div>
+
+                    {/* Content */}
                     <div>
-                      <h3 className="text-xl font-bold text-gray-800 group-hover:text-blue-600">
+                      <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
                         {kelas.name}
                       </h3>
-                      <p className="text-xs text-gray-400 mt-2">ID: {kelas.id.slice(0, 8)}...</p>
+                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">
+                        Kelola absensi siswa, jurnal harian, dan rekap laporan untuk kelas ini.
+                      </p>
                     </div>
-                    <span className="text-gray-300 group-hover:text-blue-500 text-xl font-bold">
-                      →
-                    </span>
+
+                    {/* Footer Action */}
+                    <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-400 group-hover:text-gray-600">
+                        Lihat Detail
+                      </span>
+                      <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition">
+                        ➝
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            /* EMPTY STATE (Kalau belum ada kelas) */
+            <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-12 text-center hover:border-blue-300 transition">
+              <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
+                ✨
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Belum ada kelas aktif</h3>
+              <p className="text-gray-500 mt-2 mb-6 max-w-sm mx-auto">
+                Mulai perjalanan mengajar Anda dengan membuat kelas pertama. Klik tombol di bawah ini.
+              </p>
+              <Link 
+                href="/dashboard/create-class" 
+                className="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+              >
+                Buat Kelas Sekarang
               </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-10 bg-gray-50 rounded-lg border-dashed border-2 border-gray-300">
-            <p className="text-gray-600 font-medium">Belum ada kelas.</p>
-            <p className="text-sm text-gray-400 mt-1">Klik tombol "+ Tambah Kelas" untuk memulai.</p>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   )

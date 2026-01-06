@@ -7,37 +7,30 @@ import Link from 'next/link'
 
 export default function AttendancePage({ params }: { params: Promise<{ id: string }> }) {
   const [classId, setClassId] = useState<string>('')
-  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]) // Default Hari Ini
+  const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]) 
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const router = useRouter()
 
-  // Fungsi untuk mengambil data dari server
+  // --- LOGIC (Sama seperti sebelumnya, cuma lebih rapi) ---
   const fetchData = useCallback(async (cid: string, selectedDate: string) => {
     setLoading(true)
     const result = await getAttendanceData(cid, selectedDate)
     
     if (result.data) {
-      // === MODIFIKASI DIMULAI DI SINI ===
-      // Kita cek satu-satu datanya. 
-      // Kalau statusnya masih kosong (null), kita paksa jadi 'H' (Hadir).
-      // Kalau sudah ada isinya (misal kemarin sudah disimpan 'S'), biarkan tetap 'S'.
-      
+      // Auto-set status 'H' (Hadir) jika belum ada data
       const studentsWithDefault = result.data.map((s: any) => ({
         ...s,
-        status: s.status || 'H' // <-- Ini Mantra Ajaibnya
+        status: s.status || 'H' 
       }))
-      
       setStudents(studentsWithDefault)
-      // === MODIFIKASI SELESAI ===
     } else {
-      alert("Gagal mengambil data: " + result.error)
+      window.alert("Gagal mengambil data: " + result.error)
     }
     setLoading(false)
   }, [])
 
-  // Efek Pertama kali buka / Ganti Tanggal
   useEffect(() => {
     params.then(p => {
       setClassId(p.id)
@@ -45,127 +38,170 @@ export default function AttendancePage({ params }: { params: Promise<{ id: strin
     })
   }, [params, date, fetchData])
 
-  // Fungsi saat tombol H/S/I/A diklik
   const handleStatusChange = (studentId: string, status: string) => {
+    // Efek getar (Haptic Feedback) kalau di HP mendukung
+    if (navigator.vibrate) navigator.vibrate(10); 
+    
     setStudents(prev => prev.map(s => 
       s.student_id === studentId ? { ...s, status: status } : s
     ))
   }
 
-  // Fungsi Simpan ke Database
   const handleSave = async () => {
     setSaving(true)
-    
-    // Karena default sudah 'H', maka semua siswa pasti punya status.
-    // Jadi kita simpan semua data siswa yang ada di layar.
     const result = await saveAttendance(classId, date, students)
-    
     if (result.success) {
-      alert(`Berhasil menyimpan absensi tanggal ${date}!`)
+      window.alert(`✅ Absensi tanggal ${date} berhasil disimpan!`)
       router.refresh()
     } else {
-      alert("Gagal menyimpan: " + result.message)
+      window.alert("❌ Gagal menyimpan: " + result.message)
     }
     setSaving(false)
   }
 
+  // --- UI COMPONENTS ---
   return (
-    <div className="max-w-4xl mx-auto p-6">
-       {/* Navigasi Balik */}
-       <div className="mb-6">
-        <Link href={`/dashboard/class/${classId}`} className="text-blue-600 hover:underline text-sm">
-          &larr; Kembali ke Kelas
-        </Link>
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">Presensi Harian</h1>
-        
-        {/* Pilih Tanggal */}
-        <div className="flex items-center gap-2 bg-white p-2 border rounded-md shadow-sm">
-          <span className="text-sm text-gray-500">Tanggal:</span>
-          <input 
-            type="date" 
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="outline-none text-gray-700 font-medium"
-          />
+    <div className="min-h-screen bg-gray-50 font-sans pb-32"> {/* PB-32 biar tombol simpan gak nutupin konten */}
+      
+      {/* 1. STICKY HEADER (Tanggal) */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center">
+            <Link href={`/dashboard/class/${classId}`} className="text-gray-500 hover:text-blue-600 text-sm font-medium flex items-center gap-1">
+                &larr; <span className="hidden sm:inline">Kembali</span>
+            </Link>
+            
+            <div className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Tgl:</span>
+                <input 
+                    type="date" 
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="bg-transparent border-none p-0 text-gray-900 font-bold focus:ring-0 text-sm cursor-pointer"
+                />
+            </div>
         </div>
       </div>
 
-      {/* Tabel Absensi */}
-      <div className="bg-white border rounded-lg shadow-md overflow-hidden">
+      <div className="max-w-3xl mx-auto p-4 space-y-4 mt-2">
+        <div className="flex justify-between items-end">
+            <h1 className="text-2xl font-extrabold text-gray-900">Presensi Siswa</h1>
+            <span className="text-xs font-medium bg-blue-50 text-blue-600 px-2 py-1 rounded-lg border border-blue-100">
+                Total: {students.length} Siswa
+            </span>
+        </div>
+
+        {/* 2. LIST SISWA (CARD STYLE) */}
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Sedang memuat data...</div>
+             <div className="space-y-4">
+                {[1,2,3,4].map(i => (
+                    <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
+                ))}
+             </div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-gray-700 text-sm border-b">
-                <th className="p-4 font-semibold w-10">No</th>
-                <th className="p-4 font-semibold">Nama Siswa</th>
-                <th className="p-4 font-semibold text-center w-64">Status Kehadiran</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {students.map((student, index) => (
-                <tr key={student.student_id} className="hover:bg-gray-50 transition">
-                  <td className="p-4 text-gray-500">{index + 1}</td>
-                  <td className="p-4 font-medium text-gray-800">
-                    {student.name}
-                    <span className="ml-2 text-xs text-gray-400">({student.gender})</span>
-                  </td>
-                  <td className="p-4">
-                    {/* Tombol Pilihan H/S/I/A */}
-                    <div className="flex justify-center gap-1 bg-gray-100 p-1 rounded-full w-fit mx-auto">
-                      {['H', 'S', 'I', 'A'].map((code) => (
-                        <button
-                          key={code}
-                          onClick={() => handleStatusChange(student.student_id, code)}
-                          className={`w-10 h-10 rounded-full text-sm font-bold transition-all ${
-                            student.status === code
-                              ? getColor(code) + ' text-white shadow-md transform scale-105 ring-2 ring-offset-1 ring-gray-300'
-                              : 'text-gray-400 hover:bg-gray-200'
-                          }`}
-                        >
-                          {code}
-                        </button>
-                      ))}
+            <div className="space-y-3">
+                {students.map((student, index) => (
+                    <div key={student.student_id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 transition-all hover:border-blue-300">
+                        
+                        {/* Info Siswa */}
+                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                            <span className="text-gray-400 font-mono text-xs w-6 text-center">{index + 1}</span>
+                            <div>
+                                <h3 className="text-gray-900 font-bold text-lg">{student.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${student.gender === 'L' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-pink-50 text-pink-600 border-pink-100'}`}>
+                                        {student.gender === 'L' ? 'LAKI-LAKI' : 'PEREMPUAN'}
+                                    </span>
+                                    {/* Indikator Status Teks */}
+                                    <span className="text-xs font-medium text-gray-500">
+                                        Status: <span className={getTextColor(student.status)}>{getStatusLabel(student.status)}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tombol H/S/I/A (Segmented Control) */}
+                        <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end bg-gray-50 p-1.5 rounded-xl border border-gray-100">
+                           <AttendanceButton 
+                                label="H" fullLabel="Hadir" color="bg-green-500" 
+                                active={student.status === 'H'} 
+                                onClick={() => handleStatusChange(student.student_id, 'H')} 
+                           />
+                           <AttendanceButton 
+                                label="S" fullLabel="Sakit" color="bg-blue-500" 
+                                active={student.status === 'S'} 
+                                onClick={() => handleStatusChange(student.student_id, 'S')} 
+                           />
+                           <AttendanceButton 
+                                label="I" fullLabel="Izin" color="bg-yellow-500" 
+                                active={student.status === 'I'} 
+                                onClick={() => handleStatusChange(student.student_id, 'I')} 
+                           />
+                           <AttendanceButton 
+                                label="A" fullLabel="Alpha" color="bg-red-500" 
+                                active={student.status === 'A'} 
+                                onClick={() => handleStatusChange(student.student_id, 'A')} 
+                           />
+                        </div>
+
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                ))}
+            </div>
         )}
       </div>
 
-      {/* Tombol Simpan */}
-      <div className="fixed bottom-6 right-6 md:static md:mt-8 md:flex md:justify-end">
+      {/* 3. FLOATING SAVE BUTTON */}
+      <div className="fixed bottom-6 left-0 right-0 px-6 flex justify-center z-40 pointer-events-none">
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className={`px-8 py-3 rounded-full shadow-lg text-white font-bold text-lg transition-all flex items-center gap-2 ${
-            saving ? 'bg-gray-400 cursor-wait' : 'bg-blue-600 hover:bg-blue-700 hover:scale-105 active:scale-95'
+          className={`pointer-events-auto shadow-2xl shadow-blue-900/20 w-full max-w-md py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-3 transition-all transform active:scale-95 ${
+            saving ? 'bg-gray-500 cursor-wait' : 'bg-blue-600 hover:bg-blue-700'
           }`}
         >
           {saving ? (
-            <>⏳ Menyimpan...</>
+            <>⏳ Sedang Menyimpan...</>
           ) : (
-            <>💾 Simpan Absensi</>
+            <>💾 Simpan Data Absensi</>
           )}
         </button>
       </div>
+
     </div>
   )
 }
 
-// Helper Warna (Tetap sama)
-function getColor(code: string) {
-  switch (code) {
-    case 'H': return 'bg-green-500' 
-    case 'S': return 'bg-blue-400'  
-    case 'I': return 'bg-yellow-400' 
-    case 'A': return 'bg-red-500'   
-    default: return 'bg-gray-400'
-  }
+// --- SUB-COMPONENT: TOMBOL KEREN ---
+function AttendanceButton({ label, fullLabel, color, active, onClick }: any) {
+    return (
+        <button 
+            onClick={onClick}
+            className={`
+                relative flex-1 sm:flex-none w-12 h-12 rounded-lg font-bold text-sm transition-all duration-200 flex flex-col items-center justify-center
+                ${active ? `${color} text-white shadow-md scale-105 ring-2 ring-offset-2 ring-gray-100` : 'bg-white text-gray-400 hover:bg-gray-200 border border-gray-200'}
+            `}
+        >
+            <span className="text-lg leading-none">{label}</span>
+            {active && <span className="text-[8px] uppercase tracking-tighter opacity-90">{fullLabel}</span>}
+        </button>
+    )
+}
+
+// Helper Text Color
+function getTextColor(status: string) {
+    switch(status) {
+        case 'H': return 'text-green-600 font-bold';
+        case 'S': return 'text-blue-600 font-bold';
+        case 'I': return 'text-yellow-600 font-bold';
+        case 'A': return 'text-red-600 font-bold';
+        default: return 'text-gray-400';
+    }
+}
+function getStatusLabel(status: string) {
+    switch(status) {
+        case 'H': return 'Hadir';
+        case 'S': return 'Sakit';
+        case 'I': return 'Izin';
+        case 'A': return 'Alpha';
+        default: return '-';
+    }
 }
