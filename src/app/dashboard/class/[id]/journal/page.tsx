@@ -10,7 +10,6 @@ export default function JournalPage({ params }: { params: Promise<{ id: string }
   const [submitting, setSubmitting] = useState(false)
   const [classId, setClassId] = useState('')
 
-  // Load Data saat pertama buka
   useEffect(() => {
     params.then(p => {
       setClassId(p.id)
@@ -24,141 +23,133 @@ export default function JournalPage({ params }: { params: Promise<{ id: string }
     setLoading(false)
   }
 
-  // Handle saat Form dikirim
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setSubmitting(true)
-    
     const formData = new FormData(e.currentTarget)
     const res = await addJournal(classId, formData)
 
     if (res.success) {
-      // PERBAIKAN DI SINI: Pakai window.alert
       window.alert("Jurnal berhasil disimpan! ✅")
-      
-      // Reset form manual atau reload data
       ;(e.target as HTMLFormElement).reset() 
       loadJournals(classId)
     } else {
-      // PERBAIKAN DI SINI JUGA
       window.alert("Gagal: " + res.message)
     }
     setSubmitting(false)
   }
 
-  // Handle Hapus
   async function handleDelete(id: string) {
-      // PERBAIKAN DI SINI: Pakai window.confirm
       if(!window.confirm("Yakin mau hapus jurnal ini?")) return;
-      
       await deleteJournal(id, classId)
       loadJournals(classId)
   }
 
+  // CLASS STYLE INPUT YANG BAGUS (Reusable)
+  const inputStyle = "w-full p-2.5 border border-gray-300 rounded-md mt-1 text-gray-900 bg-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 outline-none transition"
+
   return (
-    <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-8">
+    <div className="max-w-5xl mx-auto p-6 flex flex-col md:flex-row gap-8 font-sans">
       
-      {/* BAGIAN KIRI: FORM INPUT */}
+      {/* FORM INPUT */}
       <div className="w-full md:w-1/3">
-        <div className="bg-white p-6 rounded-lg shadow-md border sticky top-6">
-          <div className="mb-4">
-            <Link href={`/dashboard/class/${classId}`} className="text-blue-600 hover:underline text-sm block mb-2">
-                &larr; Kembali
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 sticky top-6">
+          <div className="mb-5 border-b pb-4">
+            <Link href={`/dashboard/class/${classId}`} className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1 mb-2">
+                &larr; Kembali ke Kelas
             </Link>
             <h2 className="text-xl font-bold text-gray-800">Tulis Jurnal</h2>
-            <p className="text-gray-500 text-xs">Catat kegiatan mengajar hari ini.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Tanggal</label>
+              <label className="block text-sm font-semibold text-gray-700">Tanggal</label>
               <input type="date" name="date" required 
                 defaultValue={new Date().toISOString().split('T')[0]}
-                className="w-full p-2 border rounded-md mt-1 focus:ring-2 focus:ring-blue-500 outline-none" 
+                className={inputStyle} 
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Jam Ke-</label>
-                    <input type="text" name="jam_ke" placeholder="1-2" required 
-                        className="w-full p-2 border rounded-md mt-1 focus:ring-2 focus:ring-blue-500 outline-none" 
-                    />
+                    <label className="block text-sm font-semibold text-gray-700">Jam Ke-</label>
+                    <input type="text" name="jam_ke" placeholder="1-2" required className={inputStyle} />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Mapel</label>
-                    <input type="text" name="mapel" placeholder="Matematika" required 
-                        className="w-full p-2 border rounded-md mt-1 focus:ring-2 focus:ring-blue-500 outline-none" 
-                    />
+                    <label className="block text-sm font-semibold text-gray-700">Mapel</label>
+                    <input type="text" name="mapel" placeholder="MTK" required className={inputStyle} />
                 </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Materi / Topik</label>
-              <textarea name="materi" rows={2} placeholder="Membahas pecahan..." required 
-                className="w-full p-2 border rounded-md mt-1 focus:ring-2 focus:ring-blue-500 outline-none" 
-              ></textarea>
+              <label className="block text-sm font-semibold text-gray-700">Materi / Topik</label>
+              <textarea name="materi" rows={3} placeholder="Membahas pecahan..." required className={inputStyle} ></textarea>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Catatan Khusus (Opsional)</label>
-              <textarea name="catatan" rows={2} placeholder="Siswa antusias, Budi sakit..." 
-                className="w-full p-2 border rounded-md mt-1 focus:ring-2 focus:ring-blue-500 outline-none" 
-              ></textarea>
+              <label className="block text-sm font-semibold text-gray-700">Catatan (Opsional)</label>
+              <textarea name="catatan" rows={2} placeholder="Kondisi kelas..." className={inputStyle} ></textarea>
             </div>
 
             <button type="submit" disabled={submitting} 
-                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition font-medium disabled:bg-gray-400">
+                className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-bold shadow-sm disabled:bg-gray-400 mt-2">
                 {submitting ? 'Menyimpan...' : 'Simpan Jurnal'}
             </button>
           </form>
         </div>
       </div>
 
-      {/* BAGIAN KANAN: DAFTAR RIWAYAT */}
+      {/* DAFTAR RIWAYAT */}
       <div className="w-full md:w-2/3">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Riwayat Mengajar</h2>
+        <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800">Riwayat Mengajar</h2>
+            <span className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full">{journals.length} Data</span>
+        </div>
         
         {loading ? (
-            <p className="text-gray-500">Memuat data...</p>
+            <div className="animate-pulse space-y-3">
+                <div className="h-20 bg-gray-200 rounded-lg"></div>
+                <div className="h-20 bg-gray-200 rounded-lg"></div>
+            </div>
         ) : journals.length === 0 ? (
-            <div className="bg-gray-50 p-8 rounded-lg text-center border border-dashed">
-                <p className="text-gray-500">Belum ada jurnal. Mulai tulis di samping kiri!</p>
+            <div className="bg-gray-50 p-10 rounded-xl text-center border-2 border-dashed border-gray-200">
+                <p className="text-gray-500 font-medium">Belum ada jurnal.</p>
+                <p className="text-sm text-gray-400">Mulai tulis kegiatan mengajarmu di sisi kiri.</p>
             </div>
         ) : (
             <div className="space-y-4">
                 {journals.map((j) => (
-                    <div key={j.id} className="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition relative group">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">
-                                    {j.date}
+                    <div key={j.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition relative group">
+                        <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-md border border-blue-100">
+                                    📅 {j.date}
                                 </span>
-                                <span className="ml-2 text-gray-500 text-xs font-mono">
-                                    Jam: {j.jam_ke}
+                                <span className="bg-gray-100 text-gray-600 text-xs font-mono px-2 py-1 rounded">
+                                    ⏰ {j.jam_ke}
                                 </span>
                             </div>
-                            <button onClick={() => handleDelete(j.id)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition">
+                            <button onClick={() => handleDelete(j.id)} className="text-gray-300 hover:text-red-500 transition p-1" title="Hapus">
                                 🗑️
                             </button>
                         </div>
                         
-                        <h3 className="font-bold text-lg text-gray-800 mt-2">{j.mapel}</h3>
-                        <p className="text-gray-600 text-sm mt-1 border-l-4 border-blue-200 pl-2">
+                        <h3 className="font-bold text-lg text-gray-900">{j.mapel}</h3>
+                        <p className="text-gray-700 text-sm mt-2 leading-relaxed">
                             {j.materi}
                         </p>
                         
                         {j.catatan && (
-                            <p className="text-gray-500 text-xs mt-3 bg-yellow-50 p-2 rounded border border-yellow-100 italic">
-                                📝 Catatan: {j.catatan}
-                            </p>
+                            <div className="mt-3 flex items-start gap-2 bg-yellow-50 p-2.5 rounded-lg border border-yellow-100">
+                                <span className="text-yellow-600 mt-0.5">📝</span>
+                                <p className="text-gray-600 text-xs italic">{j.catatan}</p>
+                            </div>
                         )}
                     </div>
                 ))}
             </div>
         )}
       </div>
-
     </div>
   )
 }
