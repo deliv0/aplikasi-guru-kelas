@@ -33,19 +33,24 @@ export default function JournalPage({ params }: { params: Promise<{ id: string }
     const res = await addJournal(classId, formData)
 
     if (res.success) {
-      alert("Jurnal berhasil disimpan! ✅")
+      // PERBAIKAN DI SINI: Pakai window.alert
+      window.alert("Jurnal berhasil disimpan! ✅")
+      
       // Reset form manual atau reload data
-      (e.target as HTMLFormElement).reset() 
+      ;(e.target as HTMLFormElement).reset() 
       loadJournals(classId)
     } else {
-      alert("Gagal: " + res.message)
+      // PERBAIKAN DI SINI JUGA
+      window.alert("Gagal: " + res.message)
     }
     setSubmitting(false)
   }
 
   // Handle Hapus
   async function handleDelete(id: string) {
-      if(!confirm("Yakin mau hapus jurnal ini?")) return;
+      // PERBAIKAN DI SINI: Pakai window.confirm
+      if(!window.confirm("Yakin mau hapus jurnal ini?")) return;
+      
       await deleteJournal(id, classId)
       loadJournals(classId)
   }
